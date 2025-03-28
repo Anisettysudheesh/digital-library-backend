@@ -1,5 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const dotEnv =require("dotenv")
+dotEnv.config()
 
 
 const middleware  = (req,res,next)=>{

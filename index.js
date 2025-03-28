@@ -9,10 +9,9 @@ dotEnv.config();
 const jwt = require('jsonwebtoken');
 app.use(express.json());
 const middleware = require('./middleware/middleware');
-if (!process.env.jwtSecret || !process.env.AdminEmail || !process.env.AdminPassword) {
-    console.error("Environment variables are missing.");
-    process.exit(1);
-}
+console.log(process.env.MONGO_URL);
+console.log(process.env.jwtSecret)
+
 
 app.get("/", (req, res) => {
     res.send('Hello World');
