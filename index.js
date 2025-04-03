@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: "https://digital-library-frontend.vercel.app/", // Replace with your Vercel frontend URL
+    methods: ["GET", "POST"],
+    credentials: true
+}));
 const UserDetails = require("./mongo");
 const dotEnv = require('dotenv');
 const bcrypt = require('bcrypt');
@@ -42,8 +46,9 @@ app.post("/UserReg", async (req, res) => {
 
 app.post("/UserLogin", async (req, res) => {
     const { username, password } = req.body;
-    const exist = await UserDetails.findOne({ username });
+
     try {
+        const exist = await UserDetails.findOne({ username });
         if (!exist) {
             return res.status(400).send('User does not exist');
         }

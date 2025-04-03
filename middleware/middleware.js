@@ -8,10 +8,7 @@ const middleware  = (req,res,next)=>{
     const token = req.header('x-token');
     if(!token){
         return res.status(401).send('Token Not Found');
-        if (!process.env.jwtSecret) {
-            console.error("jwtSecret is not defined in the environment variables.");
-            process.exit(1);
-        }
+        
 
     }
     try{
