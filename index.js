@@ -1,11 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-app.use(cors({
-    origin: "https://digital-library-frontend.vercel.app/", // Replace with your Vercel frontend URL
-    methods: ["GET", "POST"],
-    credentials: true
-}));
+app.use(cors());
 const UserDetails = require("./mongo");
 const dotEnv = require('dotenv');
 const bcrypt = require('bcrypt');
