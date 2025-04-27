@@ -29,7 +29,7 @@ app.post("/UserReg", async (req, res) => {
        
         const hashpassword = await bcrypt.hash(password, 10);
         const user = new UserDetails({
-            username:loswerCaseUsername,
+            username:lowerCaseUsername,
             password: hashpassword,
         });
 
