@@ -19,16 +19,17 @@ app.get("/", (req, res) => {
 
 app.post("/UserReg", async (req, res) => {
     const { username,  password } = req.body;
-    const exist = await UserDetails.findOne({ username });
+    const lowerCaseUsername = username.toLowerCase(); // Convert username to lowercase
 
     try {
+        const exist = await UserDetails.findOne({ username: lowerCaseUsername });
         if (exist) {
             return res.status(400).send('User already exist');
         }
        
         const hashpassword = await bcrypt.hash(password, 10);
         const user = new UserDetails({
-            username,
+            username:loswerCaseUsername,
             password: hashpassword,
         });
 
