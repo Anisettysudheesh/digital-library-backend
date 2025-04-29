@@ -18,37 +18,67 @@ app.get("/", (req, res) => {
 });
 
 // app.post("/UserReg", async (req, res) => {
-//     const { username,  password } = req.body;
-//     const lowerCaseUsername = username.toLowerCase();
+//     const users = req.body;
+
+//     if (!Array.isArray(users) || users.length === 0) {
+//         return res.status(400).send('Invalid input. Please provide an array of users.');
+//     }
 
 //     try {
-//         const exist = await UserDetails.findOne({ username: lowerCaseUsername });
-//         if (exist) {
-//             return res.status(400).send('User already exist');
-//         }
-       
-//         const hashpassword = await bcrypt.hash(password, 10);
-//         const user = new UserDetails({
-//             username:lowerCaseUsername,
-//             password: hashpassword,
+//         const userPromises = users.map(async (user) => {
+//             const lowerCaseUsername = user.username.toLowerCase();
+
+//             // Check if the user already exists
+//             const exist = await UserDetails.findOne({ username: lowerCaseUsername });
+//             if (exist) {
+//                 return { username: lowerCaseUsername, status: 'User already exists' };
+//             }
+
+//             // Hash the password and save the user
+//             const hashpassword = await bcrypt.hash(user.password, 10);
+//             const newUser = new UserDetails({
+//                 username: lowerCaseUsername,
+//                 password: hashpassword,
+//             });
+
+//             await newUser.save();
+//             return { username: lowerCaseUsername, status: 'User registered successfully' };
 //         });
 
-//         const response = await user.save();
-//         res.status(200).send('User Registered');
+      
+//         const results = await Promise.all(userPromises);
+
+//         res.status(200).json(results);
 //     } catch (err) {
+//         console.error(err);
 //         res.status(500).send('Server Error');
 //     }
 // });
-app.post("/UserReg", async (req, res) => {
-    const users = req.body; // Expecting an array of user objects
+const multer = require('multer');
+const xlsx = require('xlsx');
 
-    if (!Array.isArray(users) || users.length === 0) {
-        return res.status(400).send('Invalid input. Please provide an array of users.');
+// Configure Multer for file uploads
+const upload = multer({ dest: 'uploads/' }); // Files will be temporarily stored in the 'uploads' folder
+
+app.post("/UserReg", upload.single('file'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).send('No file uploaded. Please upload an Excel file.');
     }
 
     try {
-        const userPromises = users.map(async (user) => {
-            const lowerCaseUsername = user.username.toLowerCase(); // Convert username to lowercase
+        // Read the uploaded Excel file
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0]; // Get the first sheet
+        const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]); // Convert sheet to JSON
+
+        // Validate the data
+        if (!Array.isArray(sheetData) || sheetData.length === 0) {
+            return res.status(400).send('Invalid Excel file. Please provide a valid file with data.');
+        }
+
+        // Process each row in the Excel sheet
+        const userPromises = sheetData.map(async (row) => {
+            const lowerCaseUsername = row.username.toLowerCase(); // Convert username to lowercase
 
             // Check if the user already exists
             const exist = await UserDetails.findOne({ username: lowerCaseUsername });
@@ -57,7 +87,7 @@ app.post("/UserReg", async (req, res) => {
             }
 
             // Hash the password and save the user
-            const hashpassword = await bcrypt.hash(user.password, 10);
+            const hashpassword = await bcrypt.hash(row.password, 10);
             const newUser = new UserDetails({
                 username: lowerCaseUsername,
                 password: hashpassword,
