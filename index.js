@@ -11,6 +11,11 @@ app.use(express.json());
 const middleware = require('./middleware/middleware');
 console.log(process.env.MONGO_URL);
 console.log(process.env.jwtSecret)
+const multer = require('multer');
+const xlsx = require('xlsx');
+
+// Configure Multer for file uploads
+const upload = multer({ dest: 'uploads/' });
 
 
 app.get("/", (req, res) => {
@@ -54,11 +59,7 @@ app.get("/", (req, res) => {
 //         res.status(500).send('Server Error');
 //     }
 // });
-const multer = require('multer');
-const xlsx = require('xlsx');
-
-// Configure Multer for file uploads
-const upload = multer({ dest: 'uploads/' }); // Files will be temporarily stored in the 'uploads' folder
+ // Files will be temporarily stored in the 'uploads' folder
 
 app.post("/UserReg", upload.single('file'), async (req, res) => {
     if (!req.file) {
