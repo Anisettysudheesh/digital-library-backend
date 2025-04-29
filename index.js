@@ -17,25 +17,62 @@ app.get("/", (req, res) => {
     res.send('Hello World');
 });
 
+// app.post("/UserReg", async (req, res) => {
+//     const { username,  password } = req.body;
+//     const lowerCaseUsername = username.toLowerCase();
+
+//     try {
+//         const exist = await UserDetails.findOne({ username: lowerCaseUsername });
+//         if (exist) {
+//             return res.status(400).send('User already exist');
+//         }
+       
+//         const hashpassword = await bcrypt.hash(password, 10);
+//         const user = new UserDetails({
+//             username:lowerCaseUsername,
+//             password: hashpassword,
+//         });
+
+//         const response = await user.save();
+//         res.status(200).send('User Registered');
+//     } catch (err) {
+//         res.status(500).send('Server Error');
+//     }
+// });
 app.post("/UserReg", async (req, res) => {
-    const { username,  password } = req.body;
-    const lowerCaseUsername = username.toLowerCase(); // Convert username to lowercase
+    const users = req.body; // Expecting an array of user objects
+
+    if (!Array.isArray(users) || users.length === 0) {
+        return res.status(400).send('Invalid input. Please provide an array of users.');
+    }
 
     try {
-        const exist = await UserDetails.findOne({ username: lowerCaseUsername });
-        if (exist) {
-            return res.status(400).send('User already exist');
-        }
-       
-        const hashpassword = await bcrypt.hash(password, 10);
-        const user = new UserDetails({
-            username:lowerCaseUsername,
-            password: hashpassword,
+        const userPromises = users.map(async (user) => {
+            const lowerCaseUsername = user.username.toLowerCase(); // Convert username to lowercase
+
+            // Check if the user already exists
+            const exist = await UserDetails.findOne({ username: lowerCaseUsername });
+            if (exist) {
+                return { username: lowerCaseUsername, status: 'User already exists' };
+            }
+
+            // Hash the password and save the user
+            const hashpassword = await bcrypt.hash(user.password, 10);
+            const newUser = new UserDetails({
+                username: lowerCaseUsername,
+                password: hashpassword,
+            });
+
+            await newUser.save();
+            return { username: lowerCaseUsername, status: 'User registered successfully' };
         });
 
-        const response = await user.save();
-        res.status(200).send('User Registered');
+        // Wait for all user registration promises to resolve
+        const results = await Promise.all(userPromises);
+
+        res.status(200).json(results);
     } catch (err) {
+        console.error(err);
         res.status(500).send('Server Error');
     }
 });
