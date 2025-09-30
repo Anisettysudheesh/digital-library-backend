@@ -9,8 +9,6 @@ dotEnv.config();
 const jwt = require('jsonwebtoken');
 app.use(express.json());
 const middleware = require('./middleware/middleware');
-console.log(process.env.MONGO_URL);
-console.log(process.env.jwtSecret)
 const multer = require('multer');
 const xlsx = require('xlsx');
 const fs = require('fs');
@@ -23,91 +21,7 @@ app.get("/", (req, res) => {
     res.send('Hello World');
 });
 
-// app.post("/UserReg", async (req, res) => {
-//     const users = req.body;
 
-//     if (!Array.isArray(users) || users.length === 0) {
-//         return res.status(400).send('Invalid input. Please provide an array of users.');
-//     }
-
-//     try {
-//         const userPromises = users.map(async (user) => {
-//             const lowerCaseUsername = user.username.toLowerCase();
-
-//             // Check if the user already exists
-//             const exist = await UserDetails.findOne({ username: lowerCaseUsername });
-//             if (exist) {
-//                 return { username: lowerCaseUsername, status: 'User already exists' };
-//             }
-
-//             // Hash the password and save the user
-//             const hashpassword = await bcrypt.hash(user.password, 10);
-//             const newUser = new UserDetails({
-//                 username: lowerCaseUsername,
-//                 password: hashpassword,
-//             });
-
-//             await newUser.save();
-//             return { username: lowerCaseUsername, status: 'User registered successfully' };
-//         });
-
-      
-//         const results = await Promise.all(userPromises);
-
-//         res.status(200).json(results);
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).send('Server Error');
-//     }
-// });
- // Files will be temporarily stored in the 'uploads' folder
-
-// app.post("/UserReg", upload.single('file'), async (req, res) => {
-//     if (!req.file) {
-//         return res.status(400).send('No file uploaded. Please upload an Excel file.');
-//     }
-
-//     try {
-//         // Read the uploaded Excel file
-//         const workbook = xlsx.readFile(req.file.path);
-//         const sheetName = workbook.SheetNames[0]; // Get the first sheet
-//         const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]); // Convert sheet to JSON
-//         console.log(sheetData); // Log the sheet data for debugging
-//         // Validate the data
-//         if (!Array.isArray(sheetData) || sheetData.length === 0) {
-//             return res.status(400).send('Invalid Excel file. Please provide a valid file with data.');
-//         }
-
-//         // Process each row in the Excel sheet
-//         const userPromises = sheetData.map(async (row) => {
-//             const lowerCaseUsername = row.username.toLowerCase(); // Convert username to lowercase
-
-//             // Check if the user already exists
-//             const exist = await UserDetails.findOne({ username: lowerCaseUsername });
-//             if (exist) {
-//                 return { username: lowerCaseUsername, status: 'User already exists' };
-//             }
-
-//             // Hash the password and save the user
-//             const hashpassword = await bcrypt.hash(row.password, 10);
-//             const newUser = new UserDetails({
-//                 username: lowerCaseUsername,
-//                 password: hashpassword,
-//             });
-
-//             await newUser.save();
-//             return { username: lowerCaseUsername, status: 'User registered successfully' };
-//         });
-
-//         // Wait for all user registration promises to resolve
-//         const results = await Promise.all(userPromises);
-
-//         res.status(200).json(results);
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).send('Server Error');
-//     }
-// });
 
 
 
@@ -181,7 +95,42 @@ app.post("/UserReg", upload.single('file'), async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+app.post("/userDelete",upload.single('file'),async(req,res)=>{
+    if (!req.file) {
+        return res.status(400).send('No file uploaded. Please upload an Excel file.');
+    }
+    try{
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        // res.json(sheetData)
 
+        const deletePromises=sheetData.map(async (row)=>{
+            const lowerCaseUsername = row.username.toLowerCase();
+           const exist= await UserDetails.findOne({username:lowerCaseUsername})
+        //    if(!exist)
+        //    {
+        //     return res.send(`user ${lowerCaseUsername} does not exist.`)
+        //    }
+        if(exist){
+             const response= await UserDetails.deleteOne({username:lowerCaseUsername})
+             console.log(response)
+        }
+           
+        //    res.status(200).send(response)
+        return (`user ${lowerCaseUsername} deleted successfully.`)
+            
+        })
+        
+        const results=await Promise.all(deletePromises)
+        fs.unlinkSync(req.file.path);
+        res.status(200).send(results)
+
+    }
+    catch(err){
+        res.status(500).send("server errror while deleteting users")
+    }
+})
 
 app.post("/UserLogin", async (req, res) => {
     const { username, password } = req.body;
