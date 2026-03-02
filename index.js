@@ -108,9 +108,26 @@ app.post("/UserReg", upload.single('file'), async (req, res) => {
             return res.status(400).send('Invalid Excel file. Please provide a valid file with data.');
         }
 
+        const normalizeRowKeys = (row = {}) => {
+            if (!row || typeof row !== 'object') return {};
+            return Object.fromEntries(
+                Object.entries(row).map(([key, value]) => [String(key).trim().toLowerCase(), value])
+            );
+        };
+        const toSafeString = (value) => {
+            if (value === undefined || value === null) return '';
+            return String(value).trim();
+        };
+
         // Process each row in the Excel sheet
         const userPromises = sheetData.map(async (row) => {
-            const lowerCaseUsername = row.username.toLowerCase();
+            const normalizedRow = normalizeRowKeys(row);
+            const lowerCaseUsername = toSafeString(normalizedRow.username).toLowerCase();
+            const rawPassword = toSafeString(normalizedRow.password);
+
+            if (!lowerCaseUsername || !rawPassword) {
+                return { username: lowerCaseUsername || null, status: 'Invalid row: username or password missing' };
+            }
 
             // Check if the user already exists
             const exist = await UserDetails.findOne({ username: lowerCaseUsername });
@@ -119,7 +136,7 @@ app.post("/UserReg", upload.single('file'), async (req, res) => {
             }
 
             // Hash the password and save the user
-            const hashpassword = await bcrypt.hash(row.password, 10);
+            const hashpassword = await bcrypt.hash(rawPassword, 10);
             const newUser = new UserDetails({
                 username: lowerCaseUsername,
                 password: hashpassword,
@@ -151,20 +168,36 @@ app.post("/userDelete",upload.single('file'),async(req,res)=>{
         const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
         // res.json(sheetData)
 
+        const normalizeRowKeys = (row = {}) => {
+            if (!row || typeof row !== 'object') return {};
+            return Object.fromEntries(
+                Object.entries(row).map(([key, value]) => [String(key).trim().toLowerCase(), value])
+            );
+        };
+        const toSafeString = (value) => {
+            if (value === undefined || value === null) return '';
+            return String(value).trim();
+        };
+
         const deletePromises=sheetData.map(async (row)=>{
-            const lowerCaseUsername = row.username.toLowerCase();
+            const normalizedRow = normalizeRowKeys(row);
+            const lowerCaseUsername = toSafeString(normalizedRow.username).toLowerCase();
+
+            if (!lowerCaseUsername) {
+                return `Invalid row: username missing.`;
+            }
+
            const exist= await UserDetails.findOne({username:lowerCaseUsername})
         //    if(!exist)
         //    {
         //     return res.send(`user ${lowerCaseUsername} does not exist.`)
         //    }
-        if(exist){
+           if(exist){
              const response= await UserDetails.deleteOne({username:lowerCaseUsername})
              console.log(response)
+               return (`user ${lowerCaseUsername} deleted successfully.`)
         }
-           
-        //    res.status(200).send(response)
-        return (`user ${lowerCaseUsername} deleted successfully.`)
+           return (`user ${lowerCaseUsername} does not exist.`)
             
         })
         
